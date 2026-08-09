@@ -470,7 +470,9 @@
 </div>
 
 <script>
-const STORAGE_KEY = 'signpost:data';
+const JSONBIN_ID = '6a782c90da38895dfecc58ca';
+const JSONBIN_KEY = '$2a$10$oUNn3kkpfGCs21z5vBd/9egVqJUxOa6d3.xnCSjJWXW7dTsrdSqzu';
+const JSONBIN_BASE = 'https://api.jsonbin.io/v3/b/' + JSONBIN_ID;
 const DEFAULT_SIGNS = [
   { label: 'ป้ายที่ 1', url: 'https://www.google.com', image: null },
   { label: 'ป้ายที่ 2', url: 'https://www.facebook.com', image: null },
@@ -659,7 +661,7 @@ function renderFields(){
       const statusEl = document.getElementById('statusMsg');
       statusEl.textContent = 'กำลังประมวลผลรูป...';
       try{
-        const dataUrl = await fileToDataUrl(file, 200, 0.85);
+        const dataUrl = await fileToDataUrl(file, 150, 0.7);
         signs[idx].image = dataUrl;
         wrap.querySelector(`[data-thumb="${idx}"]`).src = dataUrl;
         wrap.querySelector(`[data-thumb="${idx}"]`).style.display = 'block';
@@ -681,10 +683,15 @@ function renderFields(){
 }
 
 async function loadSigns(){
+  const wrap = document.getElementById('signs');
+  wrap.innerHTML = '<div style="color:#9fb3c4;text-align:center;font-size:13px;">กำลังโหลดข้อมูล...</div>';
   try{
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if(raw){
-      const parsed = JSON.parse(raw);
+    const res = await fetch(JSONBIN_BASE + '/latest', {
+      headers: { 'X-Master-Key': JSONBIN_KEY }
+    });
+    if(res.ok){
+      const json = await res.json();
+      const parsed = json.record;
       if(parsed && Array.isArray(parsed.signs) && parsed.signs.length === 6){
         signs = parsed.signs.map(s => ({ label: s.label || '', url: s.url || '', image: s.image || null }));
       }
@@ -693,7 +700,7 @@ async function loadSigns(){
       }
     }
   }catch(e){
-    // no saved data yet, or storage unavailable — keep defaults
+    // network unavailable — keep defaults
   }
   applySettings();
   renderSigns();
@@ -723,19 +730,27 @@ async function saveSigns(){
   }
 
   const statusEl = document.getElementById('statusMsg');
+  statusEl.textContent = 'กำลังบันทึกขึ้นฐานข้อมูล...';
   try{
-    localStorage.setItem(STORAGE_KEY, JSON.stringify({ signs, settings }));
-    statusEl.textContent = 'บันทึกแล้ว ✓';
-    applySettings();
-    renderSigns();
-    document.getElementById('newPassword').value = '';
-    setTimeout(()=> statusEl.textContent = '', 2000);
-  }catch(e){
-    if(e && e.name === 'QuotaExceededError'){
-      statusEl.textContent = 'รูปใหญ่เกินไป ลองใช้รูปที่เล็กลง';
+    const res = await fetch(JSONBIN_BASE, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Master-Key': JSONBIN_KEY
+      },
+      body: JSON.stringify({ signs, settings })
+    });
+    if(res.ok){
+      statusEl.textContent = 'บันทึกแล้ว ✓ (ทุกเครื่องจะเห็นค่านี้)';
+      applySettings();
+      renderSigns();
+      document.getElementById('newPassword').value = '';
+      setTimeout(()=> statusEl.textContent = '', 2500);
     }else{
-      statusEl.textContent = 'เกิดข้อผิดพลาดในการบันทึก';
+      statusEl.textContent = 'บันทึกไม่สำเร็จ (รหัสข้อผิดพลาด ' + res.status + ')';
     }
+  }catch(e){
+    statusEl.textContent = 'บันทึกไม่สำเร็จ ตรวจสอบอินเทอร์เน็ต';
   }
 }
 
@@ -746,7 +761,7 @@ document.getElementById('bgFileInput').addEventListener('change', async (e) => {
   const statusEl = document.getElementById('statusMsg');
   statusEl.textContent = 'กำลังประมวลผลรูป...';
   try{
-    settings.bgImage = await fileToDataUrl(file, 1600, 0.75);
+    settings.bgImage = await fileToDataUrl(file, 1000, 0.55);
     refreshBgThumb();
     applySettings();
     statusEl.textContent = 'เลือกรูปแล้ว — กด "บันทึก" เพื่อเก็บถาวร';
