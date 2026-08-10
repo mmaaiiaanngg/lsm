@@ -376,6 +376,7 @@ footer{ position:relative; z-index:2; padding:10px 20px 26px; }
       <button class="btn btn-save" id="saveAdmin">บันทึก</button>
     </div>
     <div class="status-msg" id="statusMsg"></div>
+    <div class="hint" id="sizeIndicator" style="text-align:center;"></div>
   </div>
 </div>
 
@@ -435,7 +436,8 @@ function darken(hex, amt){
   return '#' + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1);
 }
 
-function fileToDataUrl(file, maxDim, quality){
+function fileToDataUrl(file, maxDim, quality, format){
+  format = format || 'image/jpeg';
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = () => {
@@ -448,8 +450,15 @@ function fileToDataUrl(file, maxDim, quality){
         }
         const canvas = document.createElement('canvas');
         canvas.width = width; canvas.height = height;
-        canvas.getContext('2d').drawImage(img, 0, 0, width, height);
-        resolve(canvas.toDataURL('image/png'));
+        const ctx = canvas.getContext('2d');
+        if(format === 'image/jpeg'){
+          // JPEG has no transparency channel — fill a background first so
+          // transparent PNG/webp sources don't turn black.
+          ctx.fillStyle = '#1b2733';
+          ctx.fillRect(0, 0, width, height);
+        }
+        ctx.drawImage(img, 0, 0, width, height);
+        resolve(canvas.toDataURL(format, quality));
       };
       img.onerror = () => reject(new Error('อ่านรูปไม่สำเร็จ'));
       img.src = reader.result;
@@ -529,6 +538,7 @@ function fillStyleInputs(){
   document.getElementById('newPassword').value = '';
   refreshLogoThumb();
   refreshBgThumb();
+  updateSizeIndicator();
 }
 
 function refreshLogoThumb(){
@@ -693,12 +703,13 @@ function renderFields(){
       const statusEl = document.getElementById('statusMsg');
       statusEl.textContent = 'กำลังประมวลผลรูป...';
       try{
-        const dataUrl = await fileToDataUrl(file, 150, 0.7);
+        const dataUrl = await fileToDataUrl(file, 100, 0.6, 'image/jpeg');
         signs[idx].image = dataUrl;
         wrap.querySelector(`[data-thumb="${idx}"]`).src = dataUrl;
         wrap.querySelector(`[data-thumb="${idx}"]`).style.display = 'block';
         wrap.querySelector(`[data-thumb-empty="${idx}"]`).style.display = 'none';
         statusEl.textContent = 'เลือกรูปแล้ว — กด "ดูตัวอย่าง" หรือ "บันทึก"';
+        updateSizeIndicator();
       }catch(err){
         statusEl.textContent = 'อัปโหลดรูปไม่สำเร็จ: ' + (err && err.message ? err.message : 'ไม่ทราบสาเหตุ');
       }
@@ -780,6 +791,24 @@ function initSortable(){
       document.getElementById('statusMsg').textContent = 'สลับลำดับแล้ว — กด "บันทึก" เพื่อยืนยัน';
     }
   });
+}
+
+function updateSizeIndicator(){
+  const el = document.getElementById('sizeIndicator');
+  if(!el) return;
+  let bytes;
+  try{
+    bytes = new Blob([JSON.stringify({ signs, decos, settings })]).size;
+  }catch(e){
+    bytes = JSON.stringify({ signs, decos, settings }).length;
+  }
+  const kb = (bytes / 1024).toFixed(0);
+  const limitKb = 1024; // JSONBin free Bins API limit is 1MB
+  const pct = Math.min(100, Math.round(bytes / (limitKb * 1024) * 100));
+  let color = '#7fc99a';
+  if(pct > 90) color = '#e8735c';
+  else if(pct > 70) color = '#d9a441';
+  el.innerHTML = `ขนาดข้อมูล: ${kb} KB / ${limitKb} KB (<span style="color:${color};">${pct}%</span>)`;
 }
 
 function syncFieldsIntoState(){
@@ -881,7 +910,8 @@ async function saveSigns(){
       document.getElementById('newPassword').value = '';
       setTimeout(()=> statusEl.textContent = '', 2500);
     }else{
-      statusEl.textContent = 'บันทึกไม่สำเร็จ (รหัสข้อผิดพลาด ' + res.status + ')';
+      const hint = res.status === 403 ? ' — อาจเกิดจากรูปภาพรวมกันมีขนาดใหญ่เกินโควตาฟรีของฐานข้อมูล ลองลดรูป/ลดขนาดรูปดู' : '';
+      statusEl.textContent = 'บันทึกไม่สำเร็จ (รหัสข้อผิดพลาด ' + res.status + ')' + hint;
     }
   }catch(e){
     statusEl.textContent = 'บันทึกไม่สำเร็จ ตรวจสอบอินเทอร์เน็ต';
@@ -942,9 +972,10 @@ document.getElementById('logoFileInput').addEventListener('change', async (e) =>
   const statusEl = document.getElementById('statusMsg');
   statusEl.textContent = 'กำลังประมวลผลรูป...';
   try{
-    settings.logoImage = await fileToDataUrl(file, 400, 0.85);
+    settings.logoImage = await fileToDataUrl(file, 260, 0.8, 'image/png');
     refreshLogoThumb();
     statusEl.textContent = 'เลือกโลโก้แล้ว — กด "ดูตัวอย่าง" หรือ "บันทึก"';
+        updateSizeIndicator();
   }catch(err){
     statusEl.textContent = 'อัปโหลดโลโก้ไม่สำเร็จ: ' + (err && err.message ? err.message : 'ไม่ทราบสาเหตุ');
   }
@@ -961,9 +992,10 @@ document.getElementById('bgFileInput').addEventListener('change', async (e) => {
   const statusEl = document.getElementById('statusMsg');
   statusEl.textContent = 'กำลังประมวลผลรูป...';
   try{
-    settings.bgImage = await fileToDataUrl(file, 1000, 0.55);
+    settings.bgImage = await fileToDataUrl(file, 640, 0.45, 'image/jpeg');
     refreshBgThumb();
     statusEl.textContent = 'เลือกรูปแล้ว — กด "ดูตัวอย่าง" หรือ "บันทึก"';
+        updateSizeIndicator();
   }catch(err){
     statusEl.textContent = 'อัปโหลดพื้นหลังไม่สำเร็จ: ' + (err && err.message ? err.message : 'ไม่ทราบสาเหตุ');
   }
@@ -985,10 +1017,11 @@ document.getElementById('decoFileInput').addEventListener('change', async (e) =>
   const statusEl = document.getElementById('statusMsg');
   statusEl.textContent = 'กำลังประมวลผลรูป...';
   try{
-    const dataUrl = await fileToDataUrl(file, 500, 0.85);
+    const dataUrl = await fileToDataUrl(file, 340, 0.65, 'image/jpeg');
     decos.push({ image: dataUrl, x: 55, y: 6 + decos.length * 20, width: 26 });
     renderDecoFields();
     statusEl.textContent = 'เพิ่มรูปแล้ว — ใช้ "จัดตำแหน่ง" เพื่อลากวาง แล้วกด "บันทึก"';
+        updateSizeIndicator();
   }catch(err){
     statusEl.textContent = 'อัปโหลดรูปไม่สำเร็จ: ' + (err && err.message ? err.message : 'ไม่ทราบสาเหตุ');
   }
