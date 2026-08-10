@@ -38,7 +38,7 @@ body{
 .bg-image-layer.show{ display:block; }
 .bg-image-layer::after{
   content:''; position:absolute; inset:0;
-  background:linear-gradient(180deg, rgba(10,16,24,.55), rgba(10,16,24,.75));
+  background:linear-gradient(180deg, rgba(10,16,24,.3), rgba(10,16,24,.5));
 }
 .star{
   position:absolute; width:2px; height:2px; background:var(--star);
@@ -983,7 +983,7 @@ document.getElementById('bgFileInput').addEventListener('change', async (e) => {
   const statusEl = document.getElementById('statusMsg');
   statusEl.textContent = 'กำลังประมวลผลรูป...';
   try{
-    settings.bgImage = await fileToDataUrl(file, 1000, 0.7, 'image/jpeg');
+    settings.bgImage = await fileToDataUrl(file, 1400, 0.85, 'image/jpeg');
     refreshBgThumb();
     statusEl.textContent = 'เลือกรูปแล้ว — กด "ดูตัวอย่าง" หรือ "บันทึก"';
         updateSizeIndicator();
