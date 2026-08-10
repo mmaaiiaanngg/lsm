@@ -15,6 +15,7 @@
   --coral:#e8735c;
   --star:#f4e9c9;
   --ground:#182a24;
+  --label-size:15px;
 }
 *{box-sizing:border-box;}
 html,body{margin:0;padding:0;height:100%;}
@@ -60,7 +61,7 @@ header p{
   --tip:16px; position:absolute;
   background:linear-gradient(180deg,var(--sign),var(--sign-dark));
   color:var(--sign-text); border:3px solid #3d3226; padding:14px 30px 14px 22px;
-  max-width:62%; min-width:150px; text-decoration:none; font-weight:600; font-size:15px;
+  max-width:62%; min-width:150px; text-decoration:none; font-weight:600; font-size:var(--label-size);
   box-shadow:3px 4px 0 rgba(0,0,0,.35);
   transition:box-shadow .15s ease, filter .15s ease;
   cursor:pointer; display:flex; align-items:center; gap:10px;
@@ -73,22 +74,31 @@ header p{
   content:''; position:absolute; right:-15px; top:50%; transform:translateY(-50%);
   border-top:22px solid transparent; border-bottom:22px solid transparent; border-left:15px solid var(--sign-dark);
 }
-.sign-plate .num{
-  font-family:'Kanit',sans-serif; font-weight:700; font-size:12px;
-  background:var(--sign-text); color:var(--sign); width:22px; height:22px;
-  border-radius:50%; display:flex; align-items:center; justify-content:center;
-  flex-shrink:0; overflow:hidden;
-}
-.sign-plate .num img{ width:100%; height:100%; object-fit:cover; }
 .sign-plate .label{ overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-.yard.shape-round .sign-plate{ border-radius:30px !important; padding:14px 24px !important; }
-.yard.shape-round .sign-plate::after{ content:none; }
-.yard.shape-ribbon .sign-plate{
+.yard.shape-round .sign-plate:not(.custom-img){ border-radius:30px !important; padding:14px 24px !important; }
+.yard.shape-round .sign-plate:not(.custom-img)::after{ content:none; }
+.yard.shape-ribbon .sign-plate:not(.custom-img){
   border-radius:4px !important; padding:14px 30px 14px 22px !important;
   clip-path: polygon(0 0, 88% 0, 100% 50%, 88% 100%, 0 100%);
 }
-.yard.shape-ribbon .sign-plate::after{ content:none; }
+.yard.shape-ribbon .sign-plate:not(.custom-img)::after{ content:none; }
 .sign-plate:hover{ box-shadow:4px 6px 0 rgba(0,0,0,.4); filter:brightness(1.08); border-color:var(--coral); }
+.sign-plate.custom-img{
+  background:none; border:none; box-shadow:none; padding:0; min-width:0; max-width:none;
+  display:block;
+}
+.sign-plate.custom-img::after{ content:none; }
+.sign-plate.custom-img:hover{ box-shadow:none; filter:brightness(1.08); }
+.sign-plate.custom-img .frame-img{
+  display:block; width:100%; height:auto; pointer-events:none;
+  filter:drop-shadow(2px 4px 4px rgba(0,0,0,.35));
+}
+.sign-plate.custom-img .img-label{
+  position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
+  text-align:center; padding:8%; color:var(--sign-text); font-size:var(--label-size);
+  font-weight:600; text-shadow:0 1px 3px rgba(0,0,0,.55); overflow-wrap:break-word;
+  line-height:1.2;
+}
 .deco-img{
   position:absolute; pointer-events:none; user-select:none; -webkit-user-select:none;
   filter:drop-shadow(0 6px 10px rgba(0,0,0,.4));
@@ -231,11 +241,6 @@ footer{ position:relative; z-index:2; padding:10px 20px 26px; }
 <div class="bg-image-layer" id="bgImageLayer"></div>
 <div class="stars" id="stars"></div>
 
-<div class="preview-banner" id="previewBanner">
-  👁️ กำลังดูตัวอย่าง (ยังไม่บันทึก)
-  <button id="backToEditBtn">← กลับไปแก้ไข</button>
-</div>
-
 <div class="arrange-toolbar" id="arrangeToolbar">
   <span>✋ ลากป้าย/รูป เพื่อจัดตำแหน่งที่ต้องการ</span>
   <button id="doneArrangeBtn">✅ เสร็จสิ้น</button>
@@ -314,27 +319,13 @@ footer{ position:relative; z-index:2; padding:10px 20px 26px; }
       <input type="range" id="titleSizeInput" min="18" max="56" style="margin-bottom:8px;">
       <label>ขนาดตัวอักษร "เลือกทางที่จะไป" (<span id="subtitleSizeVal">14</span>px)</label>
       <input type="range" id="subtitleSizeInput" min="9" max="28" style="margin-bottom:4px;">
-      <label style="margin-top:10px;">รูปแบบป้าย</label>
+      <label style="margin-top:10px;">รูปแบบป้าย (ใช้เมื่อป้ายนั้นไม่ได้อัปโหลดรูปเอง)</label>
       <select id="shapeSelect" style="width:100%;background:#101a24;border:1px solid rgba(255,255,255,.12);color:#f4e9c9;padding:9px 10px;border-radius:6px;font-family:'Prompt',sans-serif;font-size:14px;margin-bottom:10px;">
         <option value="arrow">ลูกศร (แบบเดิม)</option>
         <option value="round">แคปซูลมน</option>
         <option value="ribbon">ริบบิ้นบาก</option>
       </select>
-      <div style="display:flex;gap:8px;flex-wrap:wrap;">
-        <div style="flex:1;min-width:110px;">
-          <label>สีท้องฟ้าบน</label>
-          <input type="color" id="colorBgTop" style="height:36px;padding:2px;">
-        </div>
-        <div style="flex:1;min-width:110px;">
-          <label>สีท้องฟ้าล่าง</label>
-          <input type="color" id="colorBgBot" style="height:36px;padding:2px;">
-        </div>
-      </div>
       <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;">
-        <div style="flex:1;min-width:110px;">
-          <label>สีป้าย</label>
-          <input type="color" id="colorSign" style="height:36px;padding:2px;">
-        </div>
         <div style="flex:1;min-width:110px;">
           <label>สีตัวอักษรบนป้าย</label>
           <input type="color" id="colorText" style="height:36px;padding:2px;">
@@ -344,6 +335,8 @@ footer{ position:relative; z-index:2; padding:10px 20px 26px; }
           <input type="color" id="colorAccent" style="height:36px;padding:2px;">
         </div>
       </div>
+      <label style="margin-top:8px;">ขนาดตัวอักษรบนป้าย (<span id="labelSizeVal">15</span>px)</label>
+      <input type="range" id="labelSizeInput" min="10" max="30" style="margin-bottom:8px;">
       <label style="margin-top:10px;">รูปพื้นหลัง</label>
       <div class="img-row">
         <img class="thumb" id="bgThumb" style="display:none;">
@@ -372,7 +365,6 @@ footer{ position:relative; z-index:2; padding:10px 20px 26px; }
 
     <div class="panel-actions">
       <button class="btn btn-close" id="closeAdmin">ปิด</button>
-      <button class="btn btn-preview" id="previewAdmin" type="button">👁️ ดูตัวอย่าง</button>
       <button class="btn btn-save" id="saveAdmin">บันทึก</button>
     </div>
     <div class="status-msg" id="statusMsg"></div>
@@ -413,14 +405,14 @@ const DEFAULT_SETTINGS = {
   titleColor: '#f4e9c9',
   titleSize: 32,
   subtitleColor: '#9fb3c4',
-  subtitleSize: 14
+  subtitleSize: 14,
+  labelSize: 15
 };
 
 let signs = DEFAULT_SIGNS.map(s => ({...s}));
 let decos = [];
 let settings = {...DEFAULT_SETTINGS};
 let unlocked = false;
-let previewMode = false;
 let arrangeMode = false;
 let sortableInstance = null;
 let savedSnapshot = null;
@@ -472,6 +464,7 @@ function ensurePositions(){
   signs.forEach((s, i) => {
     if(typeof s.x !== 'number') s.x = (i % 2 === 0) ? 5 : 40;
     if(typeof s.y !== 'number') s.y = 4 + i * 13;
+    if(typeof s.width !== 'number') s.width = s.image ? 42 : 62;
   });
   decos.forEach((d, i) => {
     if(typeof d.x !== 'number') d.x = 55;
@@ -508,6 +501,7 @@ function applySettings(){
   root.setProperty('--sign-dark', darken(settings.sign, 35));
   root.setProperty('--sign-text', settings.text);
   root.setProperty('--coral', settings.accent);
+  root.setProperty('--label-size', (settings.labelSize || DEFAULT_SETTINGS.labelSize) + 'px');
   document.getElementById('yard').className = 'yard shape-' + settings.shape;
   const bgLayer = document.getElementById('bgImageLayer');
   if(settings.bgImage){
@@ -530,11 +524,10 @@ function fillStyleInputs(){
   document.getElementById('subtitleSizeInput').value = settings.subtitleSize || DEFAULT_SETTINGS.subtitleSize;
   document.getElementById('subtitleSizeVal').textContent = settings.subtitleSize || DEFAULT_SETTINGS.subtitleSize;
   document.getElementById('shapeSelect').value = settings.shape;
-  document.getElementById('colorBgTop').value = settings.bgTop;
-  document.getElementById('colorBgBot').value = settings.bgBot;
-  document.getElementById('colorSign').value = settings.sign;
   document.getElementById('colorText').value = settings.text;
   document.getElementById('colorAccent').value = settings.accent;
+  document.getElementById('labelSizeInput').value = settings.labelSize || DEFAULT_SETTINGS.labelSize;
+  document.getElementById('labelSizeVal').textContent = settings.labelSize || DEFAULT_SETTINGS.labelSize;
   document.getElementById('newPassword').value = '';
   refreshLogoThumb();
   refreshBgThumb();
@@ -608,8 +601,14 @@ function renderSigns(){
     a.style.top = s.y + '%';
     a.style.animationDelay = (i * 0.06) + 's';
     a.dataset.idx = i;
-    const iconHtml = s.image ? `<span class="num"><img src="${s.image}" alt=""></span>` : '';
-    a.innerHTML = `${iconHtml}<span class="label">${escapeHtml(s.label || 'ป้ายที่ ' + (i+1))}</span>`;
+    if(s.image){
+      a.classList.add('custom-img');
+      a.style.width = (s.width || 42) + '%';
+      a.innerHTML = `<img class="frame-img" src="${s.image}" alt="" draggable="false"><span class="img-label">${escapeHtml(s.label || '')}</span>`;
+    }else{
+      a.style.maxWidth = (s.width || 62) + '%';
+      a.innerHTML = `<span class="label">${escapeHtml(s.label || 'ป้ายที่ ' + (i+1))}</span>`;
+    }
     wrap.appendChild(a);
     attachDrag(a, s);
   });
@@ -681,7 +680,7 @@ function renderFields(){
       <input type="text" data-idx="${i}" data-field="label" value="${escapeHtml(s.label)}" placeholder="ชื่อป้าย">
       <label>ลิงก์ URL</label>
       <input type="text" data-idx="${i}" data-field="url" value="${escapeHtml(s.url)}" placeholder="https://example.com">
-      <label>รูปไอคอนป้าย</label>
+      <label>รูปกรอบป้าย (อัปโหลดแทนป้ายสี — ใส่ข้อความ/สี/ขนาดเองด้านล่างได้)</label>
       <div class="img-row">
         <img class="thumb" data-thumb="${i}" style="display:${s.image ? 'block' : 'none'};" src="${s.image || ''}">
         <div class="thumb thumb-empty" data-thumb-empty="${i}" style="display:${s.image ? 'none' : 'flex'};">ไม่มี</div>
@@ -691,6 +690,8 @@ function renderFields(){
           <button class="mini-btn" type="button" data-sign-remove-icon="${i}">ลบรูป</button>
         </div>
       </div>
+      <label>ขนาดป้าย (<span data-sign-width-val="${i}">${s.width || (s.image ? 42 : 62)}</span>%)</label>
+      <input type="range" min="15" max="90" value="${s.width || (s.image ? 42 : 62)}" data-sign-width="${i}">
     `;
     wrap.appendChild(fg);
   });
@@ -703,12 +704,12 @@ function renderFields(){
       const statusEl = document.getElementById('statusMsg');
       statusEl.textContent = 'กำลังประมวลผลรูป...';
       try{
-        const dataUrl = await fileToDataUrl(file, 100, 0.6, 'image/jpeg');
+        const dataUrl = await fileToDataUrl(file, 420, 0.9, 'image/png');
         signs[idx].image = dataUrl;
         wrap.querySelector(`[data-thumb="${idx}"]`).src = dataUrl;
         wrap.querySelector(`[data-thumb="${idx}"]`).style.display = 'block';
         wrap.querySelector(`[data-thumb-empty="${idx}"]`).style.display = 'none';
-        statusEl.textContent = 'เลือกรูปแล้ว — กด "ดูตัวอย่าง" หรือ "บันทึก"';
+        statusEl.textContent = 'เลือกรูปแล้ว — กด "บันทึก" เพื่อยืนยัน';
         updateSizeIndicator();
       }catch(err){
         statusEl.textContent = 'อัปโหลดรูปไม่สำเร็จ: ' + (err && err.message ? err.message : 'ไม่ทราบสาเหตุ');
@@ -731,6 +732,14 @@ function renderFields(){
       signs.splice(idx, 1);
       renderFields();
       document.getElementById('statusMsg').textContent = 'ลบป้ายแล้ว — กด "บันทึก" เพื่อยืนยัน';
+    });
+  });
+  wrap.querySelectorAll('[data-sign-width]').forEach(inp => {
+    inp.addEventListener('input', () => {
+      const idx = parseInt(inp.dataset.signWidth, 10);
+      signs[idx].width = parseInt(inp.value, 10);
+      const valEl = wrap.querySelector(`[data-sign-width-val="${idx}"]`);
+      if(valEl) valEl.textContent = inp.value;
     });
   });
 
@@ -828,11 +837,9 @@ function syncStyleIntoState(){
   settings.titleSize = parseInt(document.getElementById('titleSizeInput').value, 10);
   settings.subtitleSize = parseInt(document.getElementById('subtitleSizeInput').value, 10);
   settings.shape = document.getElementById('shapeSelect').value;
-  settings.bgTop = document.getElementById('colorBgTop').value;
-  settings.bgBot = document.getElementById('colorBgBot').value;
-  settings.sign = document.getElementById('colorSign').value;
   settings.text = document.getElementById('colorText').value;
   settings.accent = document.getElementById('colorAccent').value;
+  settings.labelSize = parseInt(document.getElementById('labelSizeInput').value, 10);
 }
 
 function addSign(){
@@ -918,25 +925,6 @@ async function saveSigns(){
   }
 }
 
-function enterPreview(){
-  syncFieldsIntoState();
-  syncStyleIntoState();
-  applySettings();
-  renderSigns();
-  renderDecos();
-  document.getElementById('overlay').classList.remove('show');
-  document.getElementById('previewBanner').classList.add('show');
-  previewMode = true;
-}
-function exitPreview(){
-  document.getElementById('previewBanner').classList.remove('show');
-  previewMode = false;
-  renderFields();
-  renderDecoFields();
-  fillStyleInputs();
-  document.getElementById('overlay').classList.add('show');
-}
-
 function enterArrange(){
   syncFieldsIntoState();
   syncStyleIntoState();
@@ -965,6 +953,9 @@ document.getElementById('titleSizeInput').addEventListener('input', (e) => {
 document.getElementById('subtitleSizeInput').addEventListener('input', (e) => {
   document.getElementById('subtitleSizeVal').textContent = e.target.value;
 });
+document.getElementById('labelSizeInput').addEventListener('input', (e) => {
+  document.getElementById('labelSizeVal').textContent = e.target.value;
+});
 
 document.getElementById('logoFileInput').addEventListener('change', async (e) => {
   const file = e.target.files[0];
@@ -972,7 +963,7 @@ document.getElementById('logoFileInput').addEventListener('change', async (e) =>
   const statusEl = document.getElementById('statusMsg');
   statusEl.textContent = 'กำลังประมวลผลรูป...';
   try{
-    settings.logoImage = await fileToDataUrl(file, 260, 0.8, 'image/png');
+    settings.logoImage = await fileToDataUrl(file, 420, 0.9, 'image/png');
     refreshLogoThumb();
     statusEl.textContent = 'เลือกโลโก้แล้ว — กด "ดูตัวอย่าง" หรือ "บันทึก"';
         updateSizeIndicator();
@@ -992,7 +983,7 @@ document.getElementById('bgFileInput').addEventListener('change', async (e) => {
   const statusEl = document.getElementById('statusMsg');
   statusEl.textContent = 'กำลังประมวลผลรูป...';
   try{
-    settings.bgImage = await fileToDataUrl(file, 640, 0.45, 'image/jpeg');
+    settings.bgImage = await fileToDataUrl(file, 1000, 0.7, 'image/jpeg');
     refreshBgThumb();
     statusEl.textContent = 'เลือกรูปแล้ว — กด "ดูตัวอย่าง" หรือ "บันทึก"';
         updateSizeIndicator();
@@ -1017,7 +1008,7 @@ document.getElementById('decoFileInput').addEventListener('change', async (e) =>
   const statusEl = document.getElementById('statusMsg');
   statusEl.textContent = 'กำลังประมวลผลรูป...';
   try{
-    const dataUrl = await fileToDataUrl(file, 340, 0.65, 'image/jpeg');
+    const dataUrl = await fileToDataUrl(file, 480, 0.9, 'image/png');
     decos.push({ image: dataUrl, x: 55, y: 6 + decos.length * 20, width: 26 });
     renderDecoFields();
     statusEl.textContent = 'เพิ่มรูปแล้ว — ใช้ "จัดตำแหน่ง" เพื่อลากวาง แล้วกด "บันทึก"';
@@ -1075,8 +1066,6 @@ document.getElementById('overlay').addEventListener('click', (e) => {
 });
 document.getElementById('saveAdmin').addEventListener('click', saveSigns);
 document.getElementById('addSignBtn').addEventListener('click', addSign);
-document.getElementById('previewAdmin').addEventListener('click', enterPreview);
-document.getElementById('backToEditBtn').addEventListener('click', exitPreview);
 document.getElementById('arrangeBtn').addEventListener('click', enterArrange);
 document.getElementById('doneArrangeBtn').addEventListener('click', exitArrange);
 
