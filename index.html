@@ -428,7 +428,10 @@ function darken(hex, amt){
   return '#' + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1);
 }
 
-function fileToDataUrl(file, maxDim, quality, format){
+const IMGBB_KEY = 'd817ce9ff51b6e2a48fc88d6b18f70b4';
+const IMGBB_UPLOAD_URL = 'https://api.imgbb.com/1/upload';
+
+function resizeImageToBlob(file, maxDim, quality, format){
   format = format || 'image/jpeg';
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -450,7 +453,10 @@ function fileToDataUrl(file, maxDim, quality, format){
           ctx.fillRect(0, 0, width, height);
         }
         ctx.drawImage(img, 0, 0, width, height);
-        resolve(canvas.toDataURL(format, quality));
+        canvas.toBlob((blob) => {
+          if(blob) resolve(blob);
+          else reject(new Error('แปลงรูปไม่สำเร็จ'));
+        }, format, quality);
       };
       img.onerror = () => reject(new Error('อ่านรูปไม่สำเร็จ'));
       img.src = reader.result;
@@ -458,6 +464,21 @@ function fileToDataUrl(file, maxDim, quality, format){
     reader.onerror = () => reject(new Error('อ่านไฟล์ไม่สำเร็จ'));
     reader.readAsDataURL(file);
   });
+}
+
+async function uploadImageHosted(file, maxDim, quality, format){
+  const blob = await resizeImageToBlob(file, maxDim, quality, format);
+  const formData = new FormData();
+  formData.append('image', blob, 'upload.' + (format === 'image/png' ? 'png' : 'jpg'));
+  const res = await fetch(IMGBB_UPLOAD_URL + '?key=' + IMGBB_KEY, {
+    method: 'POST',
+    body: formData
+  });
+  const json = await res.json();
+  if(!res.ok || !json.success){
+    throw new Error((json && json.error && json.error.message) || 'อัปโหลดรูปไม่สำเร็จ');
+  }
+  return json.data.display_url || json.data.url;
 }
 
 function ensurePositions(){
@@ -702,14 +723,14 @@ function renderFields(){
       const file = e.target.files[0];
       if(!file) return;
       const statusEl = document.getElementById('statusMsg');
-      statusEl.textContent = 'กำลังประมวลผลรูป...';
+      statusEl.textContent = 'กำลังอัปโหลดรูปขึ้นระบบ...';
       try{
-        const dataUrl = await fileToDataUrl(file, 420, 0.9, 'image/png');
-        signs[idx].image = dataUrl;
-        wrap.querySelector(`[data-thumb="${idx}"]`).src = dataUrl;
+        const url = await uploadImageHosted(file, 500, 0.9, 'image/png');
+        signs[idx].image = url;
+        wrap.querySelector(`[data-thumb="${idx}"]`).src = url;
         wrap.querySelector(`[data-thumb="${idx}"]`).style.display = 'block';
         wrap.querySelector(`[data-thumb-empty="${idx}"]`).style.display = 'none';
-        statusEl.textContent = 'เลือกรูปแล้ว — กด "บันทึก" เพื่อยืนยัน';
+        statusEl.textContent = 'อัปโหลดสำเร็จ — กด "บันทึก" เพื่อยืนยัน';
         updateSizeIndicator();
       }catch(err){
         statusEl.textContent = 'อัปโหลดรูปไม่สำเร็จ: ' + (err && err.message ? err.message : 'ไม่ทราบสาเหตุ');
@@ -812,7 +833,7 @@ function updateSizeIndicator(){
     bytes = JSON.stringify({ signs, decos, settings }).length;
   }
   const kb = (bytes / 1024).toFixed(0);
-  const limitKb = 1024; // JSONBin free Bins API limit is 1MB
+  const limitKb = 100; // JSONBin free plan: updates over 100KB are rejected
   const pct = Math.min(100, Math.round(bytes / (limitKb * 1024) * 100));
   let color = '#7fc99a';
   if(pct > 90) color = '#e8735c';
@@ -961,12 +982,12 @@ document.getElementById('logoFileInput').addEventListener('change', async (e) =>
   const file = e.target.files[0];
   if(!file) return;
   const statusEl = document.getElementById('statusMsg');
-  statusEl.textContent = 'กำลังประมวลผลรูป...';
+  statusEl.textContent = 'กำลังอัปโหลดรูปขึ้นระบบ...';
   try{
-    settings.logoImage = await fileToDataUrl(file, 420, 0.9, 'image/png');
+    settings.logoImage = await uploadImageHosted(file, 500, 0.9, 'image/png');
     refreshLogoThumb();
-    statusEl.textContent = 'เลือกโลโก้แล้ว — กด "ดูตัวอย่าง" หรือ "บันทึก"';
-        updateSizeIndicator();
+    statusEl.textContent = 'อัปโหลดสำเร็จ — กด "บันทึก" เพื่อยืนยัน';
+    updateSizeIndicator();
   }catch(err){
     statusEl.textContent = 'อัปโหลดโลโก้ไม่สำเร็จ: ' + (err && err.message ? err.message : 'ไม่ทราบสาเหตุ');
   }
@@ -981,12 +1002,12 @@ document.getElementById('bgFileInput').addEventListener('change', async (e) => {
   const file = e.target.files[0];
   if(!file) return;
   const statusEl = document.getElementById('statusMsg');
-  statusEl.textContent = 'กำลังประมวลผลรูป...';
+  statusEl.textContent = 'กำลังอัปโหลดรูปขึ้นระบบ...';
   try{
-    settings.bgImage = await fileToDataUrl(file, 1400, 0.85, 'image/jpeg');
+    settings.bgImage = await uploadImageHosted(file, 1600, 0.9, 'image/jpeg');
     refreshBgThumb();
-    statusEl.textContent = 'เลือกรูปแล้ว — กด "ดูตัวอย่าง" หรือ "บันทึก"';
-        updateSizeIndicator();
+    statusEl.textContent = 'อัปโหลดสำเร็จ — กด "บันทึก" เพื่อยืนยัน';
+    updateSizeIndicator();
   }catch(err){
     statusEl.textContent = 'อัปโหลดพื้นหลังไม่สำเร็จ: ' + (err && err.message ? err.message : 'ไม่ทราบสาเหตุ');
   }
@@ -1006,13 +1027,13 @@ document.getElementById('decoFileInput').addEventListener('change', async (e) =>
     return;
   }
   const statusEl = document.getElementById('statusMsg');
-  statusEl.textContent = 'กำลังประมวลผลรูป...';
+  statusEl.textContent = 'กำลังอัปโหลดรูปขึ้นระบบ...';
   try{
-    const dataUrl = await fileToDataUrl(file, 480, 0.9, 'image/png');
-    decos.push({ image: dataUrl, x: 55, y: 6 + decos.length * 20, width: 26 });
+    const url = await uploadImageHosted(file, 600, 0.9, 'image/png');
+    decos.push({ image: url, x: 55, y: 6 + decos.length * 20, width: 26 });
     renderDecoFields();
-    statusEl.textContent = 'เพิ่มรูปแล้ว — ใช้ "จัดตำแหน่ง" เพื่อลากวาง แล้วกด "บันทึก"';
-        updateSizeIndicator();
+    statusEl.textContent = 'อัปโหลดสำเร็จ — ใช้ "จัดตำแหน่ง" เพื่อลากวาง แล้วกด "บันทึก"';
+    updateSizeIndicator();
   }catch(err){
     statusEl.textContent = 'อัปโหลดรูปไม่สำเร็จ: ' + (err && err.message ? err.message : 'ไม่ทราบสาเหตุ');
   }
