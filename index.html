@@ -61,11 +61,11 @@ header p{
 .sign-plate{
   --tip:16px; position:absolute;
   background:linear-gradient(180deg,var(--sign),var(--sign-dark));
-  color:var(--sign-text); border:3px solid #3d3226; padding:14px 30px 14px 22px;
-  max-width:none; min-width:0; text-decoration:none; font-weight:600; font-size:var(--label-size);
+  color:var(--sign-text); border:3px solid #3d3226; padding:0;
+  max-width:none; min-width:0; min-height:52px; text-decoration:none; font-weight:600; font-size:var(--label-size);
   box-shadow:3px 4px 0 rgba(0,0,0,.35);
   transition:box-shadow .15s ease, filter .15s ease;
-  cursor:pointer; display:flex; align-items:center; gap:10px;
+  cursor:pointer; display:block;
   border-radius:4px 14px 14px 4px;
   opacity:0; transform:scale(.9); animation:signIn .4s ease forwards;
   user-select:none; -webkit-user-select:none;
@@ -75,17 +75,16 @@ header p{
   content:''; position:absolute; right:-15px; top:50%; transform:translateY(-50%);
   border-top:22px solid transparent; border-bottom:22px solid transparent; border-left:15px solid var(--sign-dark);
 }
-.sign-plate .label{ overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-.yard.shape-round .sign-plate:not(.custom-img){ border-radius:30px !important; padding:14px 24px !important; }
+.yard.shape-round .sign-plate:not(.custom-img){ border-radius:30px !important; }
 .yard.shape-round .sign-plate:not(.custom-img)::after{ content:none; }
 .yard.shape-ribbon .sign-plate:not(.custom-img){
-  border-radius:4px !important; padding:14px 30px 14px 22px !important;
+  border-radius:4px !important;
   clip-path: polygon(0 0, 88% 0, 100% 50%, 88% 100%, 0 100%);
 }
 .yard.shape-ribbon .sign-plate:not(.custom-img)::after{ content:none; }
 .sign-plate:hover{ box-shadow:4px 6px 0 rgba(0,0,0,.4); filter:brightness(1.08); border-color:var(--coral); }
 .sign-plate.custom-img{
-  background:none; border:none; box-shadow:none; padding:0; min-width:0; max-width:none;
+  background:none; border:none; box-shadow:none; padding:0; min-width:0; max-width:none; min-height:0;
   display:block;
 }
 .sign-plate.custom-img::after{ content:none; }
@@ -94,12 +93,18 @@ header p{
   display:block; width:100%; height:auto; pointer-events:none;
   filter:drop-shadow(2px 4px 4px rgba(0,0,0,.35));
 }
-.sign-plate.custom-img .img-label{
-  position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
-  text-align:center; padding:8%; color:var(--sign-text); font-size:var(--label-size);
-  font-weight:600; text-shadow:0 1px 3px rgba(0,0,0,.55); overflow-wrap:break-word;
-  line-height:1.2;
+.sign-plate .plate-label{
+  position:absolute; transform:translate(-50%,-50%);
+  color:var(--sign-text); font-size:var(--label-size); font-weight:600; text-align:center;
+  text-shadow:0 1px 3px rgba(0,0,0,.5); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+  max-width:90%; line-height:1.2; pointer-events:none;
 }
+body.arranging .sign-plate .plate-label{
+  pointer-events:auto; cursor:grab; touch-action:none;
+  outline:1.5px dashed rgba(244,233,201,.7); outline-offset:2px; background:rgba(10,15,20,.25);
+  border-radius:4px; padding:2px 4px; white-space:normal;
+}
+body.arranging .sign-plate .plate-label:active{ cursor:grabbing; }
 .deco-img{
   position:absolute; pointer-events:none; user-select:none; -webkit-user-select:none;
   filter:drop-shadow(0 6px 10px rgba(0,0,0,.4));
@@ -246,7 +251,7 @@ footer{ position:relative; z-index:2; padding:10px 20px 26px; }
 <div class="stars" id="stars"></div>
 
 <div class="arrange-toolbar" id="arrangeToolbar">
-  <span>✋ ลากป้าย/รูป เพื่อจัดตำแหน่งที่ต้องการ</span>
+  <span>✋ ลากป้าย/รูปเพื่อย้ายตำแหน่ง — ลากตัวหนังสือแยกได้อิสระในป้าย</span>
   <button id="doneArrangeBtn">✅ เสร็จสิ้น</button>
 </div>
 
@@ -492,6 +497,8 @@ function ensurePositions(){
     if(typeof s.x !== 'number') s.x = (i % 2 === 0) ? 5 : 40;
     if(typeof s.y !== 'number') s.y = 4 + i * 13;
     if(typeof s.width !== 'number') s.width = s.image ? 42 : 62;
+    if(typeof s.textX !== 'number') s.textX = 50;
+    if(typeof s.textY !== 'number') s.textY = 50;
   });
   decos.forEach((d, i) => {
     if(typeof d.x !== 'number') d.x = 55;
@@ -628,16 +635,19 @@ function renderSigns(){
     a.style.top = s.y + '%';
     a.style.animationDelay = (i * 0.06) + 's';
     a.dataset.idx = i;
+    const labelText = s.label || (s.image ? '' : 'ป้ายที่ ' + (i+1));
     if(s.image){
       a.classList.add('custom-img');
       a.style.width = (s.width || 42) + '%';
-      a.innerHTML = `<img class="frame-img" src="${s.image}" alt="" draggable="false"><span class="img-label">${escapeHtml(s.label || '')}</span>`;
+      a.innerHTML = `<img class="frame-img" src="${s.image}" alt="" draggable="false"><span class="plate-label" style="left:${s.textX}%;top:${s.textY}%;">${escapeHtml(labelText)}</span>`;
     }else{
       a.style.width = (s.width || 62) + '%';
-      a.innerHTML = `<span class="label">${escapeHtml(s.label || 'ป้ายที่ ' + (i+1))}</span>`;
+      a.innerHTML = `<span class="plate-label" style="left:${s.textX}%;top:${s.textY}%;">${escapeHtml(labelText)}</span>`;
     }
     wrap.appendChild(a);
     attachDrag(a, s);
+    const labelEl = a.querySelector('.plate-label');
+    if(labelEl) attachTextDrag(labelEl, a, s);
   });
 }
 
@@ -686,6 +696,35 @@ function attachDrag(el, dataObj){
   });
   el.addEventListener('click', (e) => {
     if(arrangeMode) e.preventDefault();
+  });
+}
+
+function attachTextDrag(labelEl, plateEl, dataObj){
+  let startX = 0, startY = 0, startXPct = 0, startYPct = 0, rect = null;
+  labelEl.addEventListener('pointerdown', (e) => {
+    if(!arrangeMode) return;
+    e.preventDefault();
+    e.stopPropagation();
+    labelEl.setPointerCapture(e.pointerId);
+    rect = plateEl.getBoundingClientRect();
+    startX = e.clientX; startY = e.clientY;
+    startXPct = dataObj.textX; startYPct = dataObj.textY;
+  });
+  labelEl.addEventListener('pointermove', (e) => {
+    if(!arrangeMode || !rect) return;
+    if(!labelEl.hasPointerCapture || !labelEl.hasPointerCapture(e.pointerId)) return;
+    e.stopPropagation();
+    const dxPct = (e.clientX - startX) / rect.width * 100;
+    const dyPct = (e.clientY - startY) / rect.height * 100;
+    let nx = Math.max(0, Math.min(100, startXPct + dxPct));
+    let ny = Math.max(0, Math.min(100, startYPct + dyPct));
+    dataObj.textX = nx; dataObj.textY = ny;
+    labelEl.style.left = nx + '%';
+    labelEl.style.top = ny + '%';
+  });
+  labelEl.addEventListener('pointerup', (e) => {
+    rect = null;
+    if(labelEl.hasPointerCapture && labelEl.hasPointerCapture(e.pointerId)) labelEl.releasePointerCapture(e.pointerId);
   });
 }
 
@@ -790,7 +829,7 @@ function renderDecoFields(){
         <button class="remove-sign-btn" type="button" data-deco-remove="${i}">🗑 ลบ</button>
       </div>
       <label>ขนาด</label>
-      <input type="range" min="8" max="60" value="${d.width}" data-deco-width="${i}">
+      <input type="range" min="8" max="90" value="${d.width}" data-deco-width="${i}">
     `;
     wrap.appendChild(fg);
   });
