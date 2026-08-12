@@ -934,7 +934,7 @@ async function loadSigns(){
       const json = await res.json();
       const parsed = json.record;
       if(parsed && Array.isArray(parsed.signs) && parsed.signs.length > 0){
-        signs = parsed.signs.map(s => ({ label: s.label || '', url: s.url || '', image: s.image || null, x: s.x, y: s.y }));
+        signs = parsed.signs.map(s => ({ label: s.label || '', url: s.url || '', image: s.image || null, x: s.x, y: s.y, width: s.width, textX: s.textX, textY: s.textY }));
       }
       if(parsed && Array.isArray(parsed.decos)){
         decos = parsed.decos.map(d => ({ image: d.image, x: d.x, y: d.y, width: d.width }));
