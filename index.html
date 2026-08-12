@@ -340,6 +340,10 @@ footer{ position:relative; z-index:2; padding:10px 20px 26px; }
       </select>
       <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;">
         <div style="flex:1;min-width:110px;">
+          <label>สีป้าย (ใช้เมื่อป้ายไม่ได้อัปโหลดรูป)</label>
+          <input type="color" id="colorSign" style="height:36px;padding:2px;">
+        </div>
+        <div style="flex:1;min-width:110px;">
           <label>สีตัวอักษรบนป้าย</label>
           <input type="color" id="colorText" style="height:36px;padding:2px;">
         </div>
@@ -560,6 +564,7 @@ function fillStyleInputs(){
   document.getElementById('subtitleSizeInput').value = settings.subtitleSize || DEFAULT_SETTINGS.subtitleSize;
   document.getElementById('subtitleSizeVal').textContent = settings.subtitleSize || DEFAULT_SETTINGS.subtitleSize;
   document.getElementById('shapeSelect').value = settings.shape;
+  document.getElementById('colorSign').value = settings.sign;
   document.getElementById('colorText').value = settings.text;
   document.getElementById('colorAccent').value = settings.accent;
   document.getElementById('labelSizeInput').value = settings.labelSize || DEFAULT_SETTINGS.labelSize;
@@ -905,6 +910,7 @@ function syncStyleIntoState(){
   settings.titleSize = parseInt(document.getElementById('titleSizeInput').value, 10);
   settings.subtitleSize = parseInt(document.getElementById('subtitleSizeInput').value, 10);
   settings.shape = document.getElementById('shapeSelect').value;
+  settings.sign = document.getElementById('colorSign').value;
   settings.text = document.getElementById('colorText').value;
   settings.accent = document.getElementById('colorAccent').value;
   settings.labelSize = parseInt(document.getElementById('labelSizeInput').value, 10);
